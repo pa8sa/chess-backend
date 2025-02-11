@@ -2,6 +2,7 @@ import { MessageBody, SubscribeMessage, WebSocketGateway, OnGatewayConnection, O
 import { Socket, Server } from "socket.io";
 import { v4 as uuidv4 } from 'uuid'
 import { Chess } from 'chess.js'
+import { TalkService } from "./talk.service";
 
 @WebSocketGateway(3002, {})
 export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -34,7 +35,8 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     lobby.game.move(data.move)
-    console.log(lobby.game.board());
+    lobby.white.emit('game', TalkService.niceBoard(lobby.game.board()))
+    lobby.black.emit('game', TalkService.niceBoard(lobby.game.board()))
   }
 
   tryToPair(client: Socket) {
@@ -50,8 +52,8 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.clients[client.id].isInGame = true
       this.clients[opp.id].isInGame = true
 
-      client.emit('game', lobId)
-      opp.emit('game', lobId)
+      client.emit('game', {lobId: lobId, msg: 'game started! you are white'})
+      opp.emit('game', {lobId: lobId, msg: 'game started! you are black'})
     } else {
       console.log('waiting');
       this.waitingClients.push(client);

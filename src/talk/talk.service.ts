@@ -1,4 +1,33 @@
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class TalkService {}
+export class TalkService {
+  static niceBoard(board: { square: string, type: string, color: string }[][]) {
+    let niceBoard: string = ''
+
+    for (let row in board) {
+      niceBoard += `${8 - Number(row)}| `
+      for (let col in board[row]) 
+        niceBoard += board[row][col] === null ? '   ' : `${board[row][col].color}${board[row][col].type} `
+      niceBoard += '\n'
+    }
+
+    niceBoard += '   '
+
+    for (let row in board) niceBoard += '---'
+
+    niceBoard += '\n'
+
+    niceBoard += '   '
+    niceBoard += 'a  '
+    niceBoard += 'b  '
+    niceBoard += 'c  '
+    niceBoard += 'd  '
+    niceBoard += 'e  '
+    niceBoard += 'f  '
+    niceBoard += 'g  '
+    niceBoard += 'h  '
+
+    return niceBoard
+  }
+}
