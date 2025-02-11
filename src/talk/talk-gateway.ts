@@ -21,11 +21,19 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('move')
-  handleMove(client: Socket, data: string) {
-    const obj: {lobId: string, move: string} = JSON.parse(data)
-    const lobby = this.lobbies[obj.lobId]
+  handleMove(client: Socket, data: { lobId: string, move: string }) {
+    const lobby = this.lobbies[data.lobId]
 
-    lobby.game.move(obj.move)
+    if ((lobby.game.turn() === 'w' && client.id === lobby.black.id) || (lobby.game.turn() === 'b' && client.id === lobby.white.id)) {
+      client.emit('game', 'not your turn')
+      return
+    }
+    if (!lobby.game.moves().includes(data.move)) {
+      client.emit('game', 'invalid move')
+      return
+    }
+
+    lobby.game.move(data.move)
     console.log(lobby.game.board());
   }
 
