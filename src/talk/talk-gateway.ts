@@ -26,17 +26,53 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const lobby = this.lobbies[data.lobId]
 
     if ((lobby.game.turn() === 'w' && client.id === lobby.black.id) || (lobby.game.turn() === 'b' && client.id === lobby.white.id)) {
-      client.emit('game', 'not your turn')
+      client.emit('game', TalkService.responseReturn(false, null, 'not your turn'))
       return
     }
     if (!lobby.game.moves().includes(data.move)) {
-      client.emit('game', 'invalid move')
+      client.emit('game', TalkService.responseReturn(false, null, 'invalid move'))
       return
     }
 
     lobby.game.move(data.move)
-    lobby.white.emit('game', TalkService.niceBoard(lobby.game.board()))
-    lobby.black.emit('game', TalkService.niceBoard(lobby.game.board()))
+
+    const niceBoard = TalkService.niceBoard(lobby.game.board())
+    // lobby.white.emit('game', TalkService.responseReturn(true, niceBoard, null))
+    // lobby.black.emit('game', TalkService.responseReturn(true, niceBoard, null))
+    lobby.white.emit('game', niceBoard)
+    lobby.black.emit('game', niceBoard)
+
+    console.log(lobby.game.isGameOver(), lobby.game.isCheckmate(), lobby.game.isDraw(), lobby.game.turn());
+
+    if (lobby.game.isGameOver()) {
+      if (lobby.game.isDraw()) {
+        lobby.white.emit('game', TalkService.responseReturn(true, null, 'game ended in draw !'))
+        lobby.black.emit('game', TalkService.responseReturn(true, null, 'game ended in draw !'))
+      } else if (lobby.game.isCheckmate()) {
+        if (lobby.game.turn() === 'w') {
+          lobby.white.emit('game', TalkService.responseReturn(true, null, 'black wins !'))
+          lobby.black.emit('game', TalkService.responseReturn(true, null, 'black wins !'))  
+        } else {
+          lobby.white.emit('game', TalkService.responseReturn(true, null, 'white wins !'))
+          lobby.black.emit('game', TalkService.responseReturn(true, null, 'white wins !'))  
+        }
+      }
+
+      lobby.white.disconnect()
+      lobby.black.disconnect()
+
+      delete this.clients[lobby.white.id]
+      delete this.clients[lobby.black.id]
+      delete this.lobbies[data.lobId]
+    }
+  }
+
+  @SubscribeMessage('chat')
+  handleChat(client: Socket, data: { lobId: string, msg: string }) {
+    const lobby = this.lobbies[data.lobId]
+
+    lobby.white.emit('chat', data.msg)
+    lobby.black.emit('chat', data.msg)
   }
 
   tryToPair(client: Socket) {
@@ -46,17 +82,22 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const opp = this.waitingClients.pop()
       const game = new Chess()
 
+      game.load('7k/5Q2/1Q6/1P3B2/6p1/P1N5/P4PP1/2KR4 w - - 0 37')
+      console.log(TalkService.niceBoard(game.board()));
+      console.log(game.moves());
+
       const lobId = uuidv4()
       this.lobbies[lobId] = { game: game, white: client, black: opp }
 
       this.clients[client.id].isInGame = true
       this.clients[opp.id].isInGame = true
 
-      client.emit('game', {lobId: lobId, msg: 'game started! you are white'})
-      opp.emit('game', {lobId: lobId, msg: 'game started! you are black'})
+      client.emit('game', TalkService.responseReturn(true, lobId, 'game started! you are white'))
+      opp.emit('game', TalkService.responseReturn(true, lobId, 'game started! you are black'))
     } else {
       console.log('waiting');
       this.waitingClients.push(client);
+      client.emit('game', TalkService.responseReturn(true, null, 'waiting for opponent ...'))
     }
   }
 }
