@@ -31,7 +31,7 @@ export class TalkService {
     return niceBoard
   }
 
-  static responseReturn(status: boolean, data: any, msg: any) {
-    return { status, data, msg }
+  static responseReturn(status: boolean, data: any, msg: any, type: string) {
+    return { status, data, msg, type }
   }
 }
