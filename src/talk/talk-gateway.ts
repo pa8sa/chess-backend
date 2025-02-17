@@ -71,8 +71,8 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleChat(client: Socket, data: { lobId: string, msg: string }) {
     const lobby = this.lobbies[data.lobId]
 
-    lobby.white.emit('chat', data.msg)
-    lobby.black.emit('chat', data.msg)
+    lobby.white.emit('chat', TalkService.responseReturn(true, data.msg, data.msg, 'chat'))
+    lobby.black.emit('chat', TalkService.responseReturn(true, data.msg, data.msg, 'chat'))
   }
 
   tryToPair(client: Socket) {
