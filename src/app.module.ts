@@ -11,10 +11,10 @@ import { User } from './user/user.entity';
 
 @Module({
   imports: [
-    TalkModule, 
-    UserModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({ driver: ApolloDriver, autoSchemaFile: true }),
     TypeOrmModule.forRoot({ type: 'postgres', host: 'localhost', port: 5432, username: 'postgres', password: 'pa8sa1016', database: 'chess', entities: [User], synchronize: true }),
+    TalkModule, 
+    UserModule,
     AuthModule,
   ],
   controllers: [AppController],
