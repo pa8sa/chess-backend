@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class TalkService {
@@ -33,5 +34,13 @@ export class TalkService {
 
   static responseReturn(status: boolean, data: any, msg: any, type: string) {
     return { status, data, msg, type }
+  }
+
+  static checkToken(token: string) {
+    const jwtService = new JwtService();
+
+    const payload = jwtService.verify(token, {secret: process.env.JWT_SECRET})
+    if (!payload) return false
+    else return true
   }
 }

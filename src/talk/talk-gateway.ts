@@ -11,6 +11,10 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
   waitingClients: Socket[] = [];
 
   handleConnection(client: Socket) {
+    if (!TalkService.checkToken(client.handshake.headers.authorization)) {
+      client.emit('game', TalkService.responseReturn(false, null, 'first login or signup', 'error'))
+      return
+    }
     console.log(`client connected : ${client.id}`);
     this.clients[client.id] = { socket: client, isInGame: false }
     this.tryToPair(client);
