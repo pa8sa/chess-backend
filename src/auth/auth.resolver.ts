@@ -1,5 +1,5 @@
 import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
-import { UserService } from '../user/user.service';
+import { AuthService } from './auth.service';
 import { SignupDto } from '../user/dto/signup.dto';
 import { LoginDto } from '../user/dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -8,7 +8,7 @@ import * as bcrypt from 'bcrypt';
 @Resolver()
 export class AuthResolver {
   constructor(
-    private usersService: UserService,
+    private usersService: AuthService,
     private jwtService: JwtService,
   ) {}
 
