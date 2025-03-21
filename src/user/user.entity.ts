@@ -15,4 +15,20 @@ export class User {
   @Field()
   @Column()
   password: string;
+
+  @Field()
+  @Column({ default: 0 })
+  gameCount: number
+
+  @Field()
+  @Column({ default: 0 })
+  gamesWon: number
+
+  @Field()
+  @Column({ default: 0 })
+  gamesLost: number
+
+  @Field()
+  @Column({ default: 0 })
+  gamesDrawn: number
 }

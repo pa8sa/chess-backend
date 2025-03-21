@@ -37,10 +37,19 @@ export class TalkService {
   }
 
   static checkToken(token: string) {
-    const jwtService = new JwtService();
+    try { 
+      const jwtService = new JwtService();
+      
+      const payload = jwtService.verify(token, {secret: process.env.JWT_SECRET})
+      if (!payload) return false
+      else return true
+    } catch (error) {
+      return false
+    }
+  }
 
-    const payload = jwtService.verify(token, {secret: process.env.JWT_SECRET})
-    if (!payload) return false
-    else return true
+  static getUsername(token: string) {
+    const jwtService = new JwtService();
+    return jwtService.verify(token, {secret: process.env.JWT_SECRET}).username
   }
 }

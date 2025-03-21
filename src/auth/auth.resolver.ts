@@ -8,7 +8,7 @@ import * as bcrypt from 'bcrypt';
 @Resolver()
 export class AuthResolver {
   constructor(
-    private usersService: AuthService,
+    private authService: AuthService,
     private jwtService: JwtService,
   ) {}
 
@@ -19,13 +19,13 @@ export class AuthResolver {
 
   @Mutation(() => String)
   async signup(@Args('data') data: SignupDto) {
-    const user = await this.usersService.create(data.username, data.password);
+    const user = await this.authService.create(data.username, data.password);
     return this.jwtService.sign({ username: user.username, sub: user.id });
   }
 
   @Mutation(() => String)
   async login(@Args('data') data: LoginDto) {
-    const user = await this.usersService.findOne(data.username);
+    const user = await this.authService.findOne(data.username);
     if (!user || !(await bcrypt.compare(data.password, user.password))) {
       throw new Error('Invalid credentials');
     }

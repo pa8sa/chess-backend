@@ -3,6 +3,7 @@ import { Socket, Server } from "socket.io";
 import { v4 as uuidv4 } from 'uuid'
 import { Chess } from 'chess.js'
 import { TalkService } from "./talk.service";
+import { UserService } from '../user/user.service';
 
 @WebSocketGateway(3002, {})
 export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -10,9 +11,14 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
   clients: { [key: string]: { socket: Socket, isInGame: boolean } } = {};
   waitingClients: Socket[] = [];
 
+  constructor(
+    private userService: UserService
+  ) {}
+
   handleConnection(client: Socket) {
     if (!TalkService.checkToken(client.handshake.headers.authorization)) {
       client.emit('game', TalkService.responseReturn(false, null, 'first login or signup', 'error'))
+      client.disconnect()
       return
     }
     console.log(`client connected : ${client.id}`);
@@ -26,7 +32,7 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('move')
-  handleMove(client: Socket, data: { lobId: string, move: string }) {
+  async handleMove(client: Socket, data: { lobId: string, move: string }) {
     const lobby = this.lobbies[data.lobId]
 
     if ((lobby.game.turn() === 'w' && client.id === lobby.black.id) || (lobby.game.turn() === 'b' && client.id === lobby.white.id)) {
@@ -52,13 +58,28 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (lobby.game.isDraw()) {
         lobby.white.emit('game', TalkService.responseReturn(true, null, 'game ended in draw !', 'end'))
         lobby.black.emit('game', TalkService.responseReturn(true, null, 'game ended in draw !', 'end'))
+        await this.userService.updateUsersGameResult(
+          TalkService.getUsername(lobby.white.handshake.headers.authorization),
+          TalkService.getUsername(lobby.black.handshake.headers.authorization),
+          true
+        );
       } else if (lobby.game.isCheckmate()) {
         if (lobby.game.turn() === 'w') {
           lobby.white.emit('game', TalkService.responseReturn(true, null, 'black wins !', 'end'))
           lobby.black.emit('game', TalkService.responseReturn(true, null, 'black wins !', 'end'))
+          await this.userService.updateUsersGameResult(
+            TalkService.getUsername(lobby.black.handshake.headers.authorization),
+            TalkService.getUsername(lobby.white.handshake.headers.authorization),
+            false
+          );
         } else {
           lobby.white.emit('game', TalkService.responseReturn(true, null, 'white wins !', 'end'))
           lobby.black.emit('game', TalkService.responseReturn(true, null, 'white wins !', 'end'))
+          await this.userService.updateUsersGameResult(
+            TalkService.getUsername(lobby.white.handshake.headers.authorization),
+            TalkService.getUsername(lobby.black.handshake.headers.authorization),
+            false
+          );
         }
       }
 
