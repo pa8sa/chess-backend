@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Chess } from 'chess.js'
 import { TalkService } from "./talk.service";
 import { UserService } from '../user/user.service';
+import { GameService } from "../game/game.service";
 
 @WebSocketGateway(3002, {})
 export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -12,7 +13,8 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
   waitingClients: Socket[] = [];
 
   constructor(
-    private userService: UserService
+    private userService: UserService,
+    private gameService: GameService,
   ) {}
 
   handleConnection(client: Socket) {
@@ -55,31 +57,36 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(lobby.game.isGameOver(), lobby.game.isCheckmate(), lobby.game.isDraw(), lobby.game.turn());
 
     if (lobby.game.isGameOver()) {
+      const whiteUsername: string = TalkService.getUsername(lobby.white.handshake.headers.authorization);
+      const blackUsername: string = TalkService.getUsername(lobby.black.handshake.headers.authorization);
       if (lobby.game.isDraw()) {
         lobby.white.emit('game', TalkService.responseReturn(true, null, 'game ended in draw !', 'end'))
         lobby.black.emit('game', TalkService.responseReturn(true, null, 'game ended in draw !', 'end'))
         await this.userService.updateUsersGameResult(
-          TalkService.getUsername(lobby.white.handshake.headers.authorization),
-          TalkService.getUsername(lobby.black.handshake.headers.authorization),
+          whiteUsername,
+          blackUsername,
           true
         );
+        await this.gameService.createGame(whiteUsername, blackUsername, true, false, lobby.game.pgn())
       } else if (lobby.game.isCheckmate()) {
         if (lobby.game.turn() === 'w') {
           lobby.white.emit('game', TalkService.responseReturn(true, null, 'black wins !', 'end'))
           lobby.black.emit('game', TalkService.responseReturn(true, null, 'black wins !', 'end'))
           await this.userService.updateUsersGameResult(
-            TalkService.getUsername(lobby.black.handshake.headers.authorization),
-            TalkService.getUsername(lobby.white.handshake.headers.authorization),
+            blackUsername,
+            whiteUsername,
             false
           );
+          await this.gameService.createGame(whiteUsername, blackUsername, false, false, lobby.game.pgn())
         } else {
           lobby.white.emit('game', TalkService.responseReturn(true, null, 'white wins !', 'end'))
           lobby.black.emit('game', TalkService.responseReturn(true, null, 'white wins !', 'end'))
           await this.userService.updateUsersGameResult(
-            TalkService.getUsername(lobby.white.handshake.headers.authorization),
-            TalkService.getUsername(lobby.black.handshake.headers.authorization),
+            whiteUsername,
+            blackUsername,
             false
           );
+          await this.gameService.createGame(whiteUsername, blackUsername, false, true, lobby.game.pgn())
         }
       }
 
@@ -107,7 +114,19 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const opp = this.waitingClients.pop()
       const game = new Chess()
 
-      game.load('7k/5Q2/1Q6/1P3B2/6p1/P1N5/P4PP1/2KR4 w - - 0 37')
+      game.loadPgn(`[Event "?"]
+                    [Site "?"]
+                    [Date "????.??.??"]
+                    [Round "?"]
+                    [White "?"]
+                    [Black "?"]
+                    [Result "1-0"]
+                    [Link "https://www.chess.com/analysis/game/pgn/RvZ8YhZxA?tab=analysis"]
+
+                    1. d4 d5 2. c4 dxc4 3. e4 Nf6 4. Bxc4 Nxe4 5. Nc3 Nxc3 6. bxc3 Qxd4 7. Qxd4 g6
+                    8. f4 Rg8 9. Be3 Rh8 10. O-O-O Rg8 11. Qc5 Rh8 12. Qxc7 Rg8`
+                  )
+      // game.load('7k/5Q2/1Q6/1P3B2/6p1/P1N5/P4PP1/2KR4 w - - 0 37')
       console.log(TalkService.niceBoard(game.board()));
       console.log(game.moves());
 

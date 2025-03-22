@@ -10,7 +10,7 @@ export class AuthService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async create(username: string, password: string): Promise<User> {
+  async create(username: string, password: string): Promise<User | null> {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = this.usersRepository.create({ username, password: hashedPassword });
     return this.usersRepository.save(user);
