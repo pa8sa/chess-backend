@@ -14,4 +14,8 @@ export class GameService {
     const game = this.gameRepository.create({ whiteUsername, blackUsername, draw, whiteWins, pgn })
     return this.gameRepository.save(game)
   }
+
+  async findAllGamesByUsername(username: string): Promise<Game[] | null> {
+    return await this.gameRepository.find({ where: [ { whiteUsername: username }, { blackUsername: username } ] })
+  }
 }
