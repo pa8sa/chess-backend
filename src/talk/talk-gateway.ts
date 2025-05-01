@@ -5,12 +5,15 @@ import { Chess } from 'chess.js'
 import { TalkService } from "./talk.service";
 import { UserService } from '../user/user.service';
 import { GameService } from "../game/game.service";
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway(3002, {})
 export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
   lobbies: { [key: string]: { game: Chess, white: Socket, black: Socket } } = {};
   clients: { [key: string]: { socket: Socket, isInGame: boolean } } = {};
   waitingClients: Socket[] = [];
+
+  private readonly logger = new Logger(TalkGateway.name)
 
   constructor(
     private userService: UserService,
@@ -23,6 +26,7 @@ export class TalkGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.disconnect()
       return
     }
+    this.logger.log(`client connected : ${client.id}`)
     console.log(`client connected : ${client.id}`);
     this.clients[client.id] = { socket: client, isInGame: false }
     this.tryToPair(client);
